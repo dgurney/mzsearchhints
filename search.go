@@ -1,4 +1,4 @@
-// Quick and dirty iTunes search suggestion engine
+// Quick and dirty (literally) iTunes search suggestion engine
 package main
 
 import (
@@ -12,61 +12,80 @@ import (
 	"time"
 )
 
+// Hint contains all the fields that make up a hint/suggestion.
 type Hint struct {
 	Term         string `json:"term"`
 	CensoredTerm string `json:"censoredTerm"`
 	Score        string `json:"score"`
 }
 
-type Trend struct {
-	URL   string `json:"url"`
-	Label string `json:"label"`
-}
-
-type Trends []Trend
-type Hints []Hint
+type hints []Hint
 
 func hintsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Print("Suggestion request from ", r.RemoteAddr, " (user agent: ", r.UserAgent(), ")")
 	w.Header().Set("Content-Type", "application/json")
-	randomTerms := []string{"This is pointless", "Most Palone", "Saylor Twift", "Kim Jong-un", "Lukas Marsik", "Daniel Gurney", "💩"}
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(randomTerms), func(i, j int) { randomTerms[i], randomTerms[j] = randomTerms[j], randomTerms[i] })
-	var testHints Hints
-	for i := 0; i < len(randomTerms); i++ {
-		hint := Hint{
-			Term:         randomTerms[i],
-			CensoredTerm: randomTerms[i],
-			Score:        strconv.Itoa(rand.Intn(10000)),
-		}
-		testHints = append(testHints, hint)
+	var hints hints
+	term := ""
+	switch {
+	default:
+		term = r.URL.Query()["term"][0]
+	case len(r.URL.Query()["term"][0]) == 0:
+		term = "test"
 	}
-	hints, err := json.Marshal(testHints)
+	ph, err := getPornhubResults(term)
 	if err != nil {
-		panic(err)
+		fmt.Fprint(w, hints.catch(err))
+		return
 	}
-	fmt.Fprintf(w, "%s", hints)
-}
-
-func trendsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Print("Trends request from ", r.RemoteAddr, " (user agent: ", r.UserAgent(), ")")
-	w.Header().Set("Content-Type", "application/json")
-	randomLabels := []string{"🍕🥓", "Vladimir Putin", "Your mom", "PewDiePie", "👉👌"}
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(randomLabels), func(i, j int) { randomLabels[i], randomLabels[j] = randomLabels[j], randomLabels[i] })
-	var testTrends Trends
-	for i := 0; i < len(randomLabels); i++ {
-		trend := Trend{
-			Label: randomLabels[i],
-			URL:   "https://search.itunes.apple.com/WebObjects/MZStore.woa/wa/search?src=trending&term=Ariana%20Grande",
-		}
-		testTrends = append(testTrends, trend)
+	hint0 := Hint{
+		Term:         ph.Num0,
+		CensoredTerm: ph.Num0,
+		Score:        strconv.Itoa(rand.Intn(10000)),
 	}
-	trends, err := json.Marshal(testTrends)
+	hint1 := Hint{
+		Term:         ph.Num1,
+		CensoredTerm: ph.Num1,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hint2 := Hint{
+		Term:         ph.Num2,
+		CensoredTerm: ph.Num2,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hint3 := Hint{
+		Term:         ph.Num3,
+		CensoredTerm: ph.Num3,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hint4 := Hint{
+		Term:         ph.Num4,
+		CensoredTerm: ph.Num4,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hint5 := Hint{
+		Term:         ph.Num5,
+		CensoredTerm: ph.Num5,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hint6 := Hint{
+		Term:         ph.Num6,
+		CensoredTerm: ph.Num6,
+		Score:        strconv.Itoa(rand.Intn(10000)),
+	}
+	hints = append(hints, hint0)
+	hints = append(hints, hint1)
+	hints = append(hints, hint2)
+	hints = append(hints, hint3)
+	hints = append(hints, hint4)
+	hints = append(hints, hint5)
+	hints = append(hints, hint6)
+	phHints, err := json.Marshal(hints)
 	if err != nil {
-		panic(err)
+		fmt.Fprint(w, hints.catch(err))
+		return
 	}
-	fmt.Fprintf(w, "%s", trends)
+	fmt.Fprint(w, string(phHints))
 }
 
 func main() {
